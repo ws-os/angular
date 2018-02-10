@@ -13,7 +13,7 @@ import {AbstractControl, FormArray, FormControl, FormGroup, ValidationErrors, Va
 import {of } from 'rxjs/observable/of';
 
 
-export function main() {
+(function() {
   function simpleValidator(c: AbstractControl): ValidationErrors|null {
     return c.get('one') !.value === 'correct' ? null : {'broken': true};
   }
@@ -1045,6 +1045,28 @@ export function main() {
           expect(logger).toEqual(['control', 'group', 'form']);
         });
 
+        it('should not emit value change events when emitEvent = false', () => {
+          c.valueChanges.subscribe(() => logger.push('control'));
+          g.valueChanges.subscribe(() => logger.push('group'));
+          form.valueChanges.subscribe(() => logger.push('form'));
+
+          g.disable({emitEvent: false});
+          expect(logger).toEqual([]);
+          g.enable({emitEvent: false});
+          expect(logger).toEqual([]);
+        });
+
+        it('should not emit status change events when emitEvent = false', () => {
+          c.statusChanges.subscribe(() => logger.push('control'));
+          g.statusChanges.subscribe(() => logger.push('group'));
+          form.statusChanges.subscribe(() => logger.push('form'));
+
+          g.disable({emitEvent: false});
+          expect(logger).toEqual([]);
+          g.enable({emitEvent: false});
+          expect(logger).toEqual([]);
+        });
+
       });
 
     });
@@ -1070,12 +1092,12 @@ export function main() {
       });
 
       it('should update tree validity', () => {
-        form._updateTreeValidity();
+        (form as any)._updateTreeValidity();
         expect(logger).toEqual(['one', 'two', 'nested', 'three', 'form']);
       });
 
       it('should not emit events when turned off', () => {
-        form._updateTreeValidity({emitEvent: false});
+        (form as any)._updateTreeValidity({emitEvent: false});
         expect(logger).toEqual([]);
       });
 
@@ -1126,4 +1148,4 @@ export function main() {
 
 
   });
-}
+})();

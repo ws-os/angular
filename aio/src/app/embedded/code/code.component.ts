@@ -2,7 +2,7 @@ import { Component, ElementRef, ViewChild, OnChanges, Input } from '@angular/cor
 import { Logger } from 'app/shared/logger.service';
 import { PrettyPrinter } from './pretty-printer.service';
 import { CopierService } from 'app/shared/copier.service';
-import { MdSnackBar } from '@angular/material';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 const defaultLineNumsCount = 10; // by default, show linenums over this number
 
@@ -100,7 +100,7 @@ export class CodeComponent implements OnChanges {
   @ViewChild('codeContainer') codeContainer: ElementRef;
 
   constructor(
-    private snackbar: MdSnackBar,
+    private snackbar: MatSnackBar,
     private pretty: PrettyPrinter,
     private copier: CopierService,
     private logger: Logger) {}
@@ -170,7 +170,7 @@ export class CodeComponent implements OnChanges {
   }
 }
 
-function leftAlign(text) {
+function leftAlign(text: string) {
   let indent = Number.MAX_VALUE;
   const lines = text.split('\n');
   lines.forEach(line => {

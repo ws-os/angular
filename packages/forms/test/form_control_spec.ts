@@ -11,9 +11,9 @@ import {fakeAsync, tick} from '@angular/core/testing';
 import {AsyncTestCompleter, beforeEach, describe, inject, it} from '@angular/core/testing/src/testing_internal';
 import {FormControl, FormGroup, Validators} from '@angular/forms';
 
-import {FormArray} from '../src/model';
+import {FormArray} from '@angular/forms/src/model';
 
-export function main() {
+(function() {
   function asyncValidator(expected: string, timeouts = {}) {
     return (c: FormControl) => {
       let resolve: (result: any) => void = undefined !;
@@ -1139,7 +1139,27 @@ export function main() {
           expect(fn).toThrowError(`Expected validator to return Promise or Observable.`);
         });
 
+        it('should not emit value change events when emitEvent = false', () => {
+          c.valueChanges.subscribe(() => logger.push('control'));
+          g.valueChanges.subscribe(() => logger.push('group'));
+
+          c.disable({emitEvent: false});
+          expect(logger).toEqual([]);
+          c.enable({emitEvent: false});
+          expect(logger).toEqual([]);
+        });
+
+        it('should not emit status change events when emitEvent = false', () => {
+          c.statusChanges.subscribe(() => logger.push('control'));
+          g.statusChanges.subscribe(() => logger.push('form'));
+
+          c.disable({emitEvent: false});
+          expect(logger).toEqual([]);
+          c.enable({emitEvent: false});
+          expect(logger).toEqual([]);
+        });
+
       });
     });
   });
-}
+})();

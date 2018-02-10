@@ -15,15 +15,10 @@ export declare class AsyncPipe implements OnDestroy, PipeTransform {
 export declare class CommonModule {
 }
 
-/** @experimental */
-export declare const CURRENCIES: {
-    [code: string]: (string | undefined)[];
-};
-
 /** @stable */
 export declare class CurrencyPipe implements PipeTransform {
     constructor(_locale: string);
-    transform(value: any, currencyCode?: string, display?: 'code' | 'symbol' | 'symbol-narrow' | boolean, digits?: string, locale?: string): string | null;
+    transform(value: any, currencyCode?: string, display?: 'code' | 'symbol' | 'symbol-narrow' | string | boolean, digitsInfo?: string, locale?: string): string | null;
 }
 
 /** @stable */
@@ -35,7 +30,7 @@ export declare class DatePipe implements PipeTransform {
 /** @stable */
 export declare class DecimalPipe implements PipeTransform {
     constructor(_locale: string);
-    transform(value: any, digits?: string, locale?: string): string | null;
+    transform(value: any, digitsInfo?: string, locale?: string): string | null;
 }
 
 /** @stable */
@@ -82,6 +77,9 @@ export declare enum FormStyle {
     Format = 0,
     Standalone = 1,
 }
+
+/** @experimental */
+export declare function getCurrencySymbol(code: string, format: 'wide' | 'narrow', locale?: string): string;
 
 /** @experimental */
 export declare function getLocaleCurrencyName(locale: string): string | null;
@@ -134,6 +132,9 @@ export declare function getLocaleTimeFormat(locale: string, width: FormatWidth):
 /** @experimental */
 export declare function getLocaleWeekEndRange(locale: string): [WeekDay, WeekDay];
 
+/** @experimental */
+export declare function getNbOfCurrencyDigits(code: string): number;
+
 /** @stable */
 export declare class HashLocationStrategy extends LocationStrategy {
     constructor(_platformLocation: PlatformLocation, _baseHref?: string);
@@ -184,13 +185,13 @@ export declare class Location {
     constructor(platformStrategy: LocationStrategy);
     back(): void;
     forward(): void;
-    go(path: string, query?: string): void;
+    go(path: string, query?: string, state?: any): void;
     isCurrentPathEqualTo(path: string, query?: string): boolean;
     normalize(url: string): string;
     path(includeHash?: boolean): string;
     prepareExternalUrl(url: string): string;
-    replaceState(path: string, query?: string): void;
-    subscribe(onNext: (value: PopStateEvent) => void, onThrow?: ((exception: any) => void) | null, onReturn?: (() => void) | null): Object;
+    replaceState(path: string, query?: string, state?: any): void;
+    subscribe(onNext: (value: PopStateEvent) => void, onThrow?: ((exception: any) => void) | null, onReturn?: (() => void) | null): ISubscription;
     static joinWithSlash(start: string, end: string): string;
     static normalizeQueryParams(params: string): string;
     static stripTrailingSlash(url: string): string;
@@ -201,6 +202,7 @@ export declare const LOCATION_INITIALIZED: InjectionToken<Promise<any>>;
 
 /** @experimental */
 export interface LocationChangeEvent {
+    state: any;
     type: string;
 }
 
@@ -387,7 +389,7 @@ export declare class PathLocationStrategy extends LocationStrategy {
 /** @stable */
 export declare class PercentPipe implements PipeTransform {
     constructor(_locale: string);
-    transform(value: any, digits?: string, locale?: string): string | null;
+    transform(value: any, digitsInfo?: string, locale?: string): string | null;
 }
 
 /** @stable */
@@ -417,12 +419,13 @@ export declare enum Plural {
 /** @experimental */
 export interface PopStateEvent {
     pop?: boolean;
+    state?: any;
     type?: string;
     url?: string;
 }
 
 /** @experimental */
-export declare function registerLocaleData(data: any, extraData?: any): void;
+export declare function registerLocaleData(data: any, localeId?: string | any, extraData?: any): void;
 
 /** @stable */
 export declare class SlicePipe implements PipeTransform {

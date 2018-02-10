@@ -12,7 +12,7 @@ import {getDOM} from '@angular/platform-browser/src/dom/dom_adapter';
 
 import {compViewDef, compViewDefFactory, createAndGetRootNodes, createEmbeddedView} from './helper';
 
-export function main() {
+{
   describe(`Embedded Views`, () => {
 
     it('should create embedded views with the right context', () => {
@@ -145,7 +145,7 @@ export function main() {
       childValue = 'v2';
       expect(() => Services.checkNoChangesView(parentView))
           .toThrowError(
-              `ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'v1'. Current value: 'v2'.`);
+              `ExpressionChangedAfterItHasBeenCheckedError: Expression has changed after it was checked. Previous value: 'name: v1'. Current value: 'name: v2'.`);
     });
 
     it('should destroy embedded views', () => {

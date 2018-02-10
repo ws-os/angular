@@ -9,6 +9,7 @@
 import {Adapter, Context} from './adapter';
 import {CacheState, UpdateCacheStatus, UpdateSource, UrlMetadata} from './api';
 import {Database, Table} from './database';
+import {SwCriticalError} from './error';
 import {IdleScheduler} from './idle';
 import {AssetGroupConfig} from './manifest';
 import {sha1Binary} from './sha1';
@@ -276,6 +277,7 @@ export abstract class AssetGroup {
     const cache = await this.cache;
     // Start with the set of all cached URLs.
     return (await cache.keys())
+        .map(request => request.url)
         // Exclude the URLs which have hashes.
         .filter(url => !this.hashes.has(url));
   }
@@ -344,7 +346,7 @@ export abstract class AssetGroup {
     if ((res as any)['redirected'] && !!res.url) {
       // If the redirect limit is exhausted, fail with an error.
       if (redirectLimit === 0) {
-        throw new Error(
+        throw new SwCriticalError(
             `Response hit redirect limit (fetchFromNetwork): request redirected too many times, next is ${res.url}`);
       }
 
@@ -408,7 +410,7 @@ export abstract class AssetGroup {
 
         // If the response was unsuccessful, there's nothing more that can be done.
         if (!cacheBustedResult.ok) {
-          throw new Error(
+          throw new SwCriticalError(
               `Response not Ok (cacheBustedFetchFromNetwork): cache busted request for ${req.url} returned response ${cacheBustedResult.status} ${cacheBustedResult.statusText}`);
         }
 
@@ -418,7 +420,7 @@ export abstract class AssetGroup {
         // If the cache-busted version doesn't match, then the manifest is not an accurate
         // representation of the server's current set of files, and the SW should give up.
         if (canonicalHash !== cacheBustedHash) {
-          throw new Error(
+          throw new SwCriticalError(
               `Hash mismatch (cacheBustedFetchFromNetwork): ${req.url}: expected ${canonicalHash}, got ${cacheBustedHash} (after cache busting)`);
         }
 

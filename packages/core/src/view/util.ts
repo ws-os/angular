@@ -7,10 +7,10 @@
  */
 
 import {WrappedValue, devModeEqual} from '../change_detection/change_detection';
+import {SOURCE} from '../di/injector';
 import {ViewEncapsulation} from '../metadata/view';
 import {RendererType2} from '../render/api';
 import {looseIdentical, stringify} from '../util';
-
 import {expressionChangedAfterItHasBeenCheckedError} from './errors';
 import {BindingDef, BindingFlags, Definition, DefinitionFactory, DepDef, DepFlags, ElementData, NodeDef, NodeFlags, QueryValueType, Services, ViewData, ViewDefinition, ViewDefinitionFactory, ViewFlags, ViewState, asElementData, asTextData} from './types';
 
@@ -28,13 +28,10 @@ export function tokenKey(token: any): string {
 }
 
 export function unwrapValue(view: ViewData, nodeIdx: number, bindingIdx: number, value: any): any {
-  if (value instanceof WrappedValue) {
-    value = value.wrapped;
-    let globalBindingIdx = view.def.nodes[nodeIdx].bindingIndex + bindingIdx;
-    let oldValue = view.oldValues[globalBindingIdx];
-    if (oldValue instanceof WrappedValue) {
-      oldValue = oldValue.wrapped;
-    }
+  if (WrappedValue.isWrapped(value)) {
+    value = WrappedValue.unwrap(value);
+    const globalBindingIdx = view.def.nodes[nodeIdx].bindingIndex + bindingIdx;
+    const oldValue = WrappedValue.unwrap(view.oldValues[globalBindingIdx]);
     view.oldValues[globalBindingIdx] = new WrappedValue(oldValue);
   }
   return value;
@@ -101,9 +98,10 @@ export function checkBindingNoChanges(
     view: ViewData, def: NodeDef, bindingIdx: number, value: any) {
   const oldValue = view.oldValues[def.bindingIndex + bindingIdx];
   if ((view.state & ViewState.BeforeFirstCheck) || !devModeEqual(oldValue, value)) {
+    const bindingName = def.bindings[bindingIdx].name;
     throw expressionChangedAfterItHasBeenCheckedError(
-        Services.createDebugContext(view, def.nodeIndex), oldValue, value,
-        (view.state & ViewState.BeforeFirstCheck) !== 0);
+        Services.createDebugContext(view, def.nodeIndex), `${bindingName}: ${oldValue}`,
+        `${bindingName}: ${value}`, (view.state & ViewState.BeforeFirstCheck) !== 0);
   }
 }
 
@@ -209,7 +207,7 @@ export function splitMatchedQueriesDsl(
   return {matchedQueries, references, matchedQueryIds};
 }
 
-export function splitDepsDsl(deps: ([DepFlags, any] | any)[]): DepDef[] {
+export function splitDepsDsl(deps: ([DepFlags, any] | any)[], sourceName?: string): DepDef[] {
   return deps.map(value => {
     let token: any;
     let flags: DepFlags;
@@ -218,6 +216,9 @@ export function splitDepsDsl(deps: ([DepFlags, any] | any)[]): DepDef[] {
     } else {
       flags = DepFlags.None;
       token = value;
+    }
+    if (token && (typeof token === 'function' || typeof token === 'object') && sourceName) {
+      Object.defineProperty(token, SOURCE, {value: sourceName, configurable: true});
     }
     return {flags, token, tokenKey: tokenKey(token)};
   });

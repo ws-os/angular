@@ -1,7 +1,5 @@
 # Lifecycle Hooks
 
-<img src="generated/images/guide/lifecycle-hooks/hooks-in-sequence.png" alt="Us" class="left">
-
 A component has a lifecycle managed by Angular.
 
 Angular creates it, renders it, creates and renders its children,
@@ -140,7 +138,7 @@ calls the lifecycle hook methods in the following sequence at specific moments:
   </tr>
   <tr style='vertical-align:top'>
     <td>
-      <code>ngOnDestroy</code>
+      <code>ngOnDestroy()</code>
     </td>
     <td>
 

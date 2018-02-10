@@ -32,7 +32,7 @@ export function createTsConfig(options: TsConfigOptions) {
   const result = options.defaultTsConfig;
 
   return {
-    'extends': '../angular/test/ngc-wrapped/empty/tsconfig',
+    'extends': '../angular/packages/bazel/test/ngc-wrapped/empty/tsconfig',
     'compilerOptions': {
       ...result.compilerOptions,
       'outDir': options.outDir,
@@ -64,6 +64,13 @@ export function createTsConfig(options: TsConfigOptions) {
       'es5Mode': true,
       'manifest': createManifestPath(options),
       'compilationTargetSrc': options.compilationTargetSrc,
+      // Override this property from the real tsconfig we read
+      // Because we ask for :empty_tsconfig.json, we get the ES6 version which
+      // expects to write externs, yet that doesn't work under this fixture.
+      'tsickleExternsPath': '',
+      // we don't copy the node_modules into our tmp dir, so we should look in
+      // the original workspace directory for it
+      'nodeModulesPrefix': '../angular/node_modules',
     },
     'files': options.files,
     'angularCompilerOptions': {

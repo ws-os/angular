@@ -40,7 +40,7 @@ Note the following:
 also carries a custom validator directive, `forbiddenName`. For more 
 information, see [Custom validators](guide/form-validation#custom-validators) section.
 
-* `#name="ngModel"` exports `NgModel` into a local variable callled `name`. `NgModel` mirrors many of the properties of its underlying 
+* `#name="ngModel"` exports `NgModel` into a local variable called `name`. `NgModel` mirrors many of the properties of its underlying 
 `FormControl` instance, so you can use this in the template to check for control states such as `valid` and `dirty`. For a full list of control properties, see the [AbstractControl](api/forms/AbstractControl) 
 API reference.
 
@@ -171,7 +171,7 @@ comes together:
 <code-example path="form-validation/src/app/shared/forbidden-name.directive.ts" region="directive" title="shared/forbidden-name.directive.ts (directive)">
 </code-example>
 
-Once the `ForbiddenValidatorDirective` is ready, you can simply add its selector, `forbiddenName`, to any input element to activate it. For example:
+Once the `ForbiddenValidatorDirective` is ready, you can simply add its selector, `appForbiddenName`, to any input element to activate it. For example:
 
 <code-example path="form-validation/src/app/template/hero-form-template.component.html" region="name-input" title="template/hero-form-template.component.html (forbidden-name-input)" linenums="false">
 

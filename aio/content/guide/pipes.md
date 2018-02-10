@@ -16,7 +16,7 @@ In fact, you might like to apply them in your HTML templates as you do styles.
 
 Introducing Angular pipes, a way to write display-value transformations that you can declare in your HTML.
 
-You can run the <live-example></live-example> in Plunker and download the code from there.
+You can run the <live-example></live-example> in Stackblitz and download the code from there.
 
 
 ## Using pipes
@@ -214,7 +214,6 @@ Note the following:
 * You use your custom pipe the same way you use built-in pipes.
 * You must include your pipe in the `declarations` array of the `AppModule`.
 
-
 <div class="callout is-helpful">
 
 <header>
@@ -222,10 +221,9 @@ Note the following:
 </header>
 
 
-You must manually register custom pipes.
+You must register custom pipes.
 If you don't, Angular reports an error.
-In the previous example, you didn't list the `DatePipe` because all
-Angular built-in pipes are pre-registered.
+Angular CLI's generator registers the pipe automatically.
 
 
 </div>

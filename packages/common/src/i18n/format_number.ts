@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {NumberFormatStyle, NumberSymbol, getLocaleNumberFormat, getLocaleNumberSymbol} from './locale_data_api';
+import {NumberFormatStyle, NumberSymbol, getLocaleNumberFormat, getLocaleNumberSymbol, getNbOfCurrencyDigits} from './locale_data_api';
 
 export const NUMBER_FORMAT_REGEXP = /^(\d+)?\.((\d+)(-(\d+))?)?$/;
 const MAX_DIGITS = 22;
@@ -18,47 +18,38 @@ const DIGIT_CHAR = '#';
 const CURRENCY_CHAR = '¤';
 const PERCENT_CHAR = '%';
 
-/** @internal */
-export type FormatNumberRes = {
-  str: string | null,
-  error?: string
-};
-
 /**
- * Transform a number to a locale string based on a style and a format
- *
- * @internal
+ * Transforms a string into a number (if needed)
  */
-export function formatNumber(
-    value: number | string, locale: string, style: NumberFormatStyle, digitsInfo?: string | null,
-    currency: string | null = null): FormatNumberRes {
-  const res: FormatNumberRes = {str: null};
-  const format = getLocaleNumberFormat(locale, style);
-  let num;
-
+function strToNumber(value: number | string): number {
   // Convert strings to numbers
   if (typeof value === 'string' && !isNaN(+value - parseFloat(value))) {
-    num = +value;
-  } else if (typeof value !== 'number') {
-    res.error = `${value} is not a number`;
-    return res;
-  } else {
-    num = value;
+    return +value;
   }
-
-  if (style === NumberFormatStyle.Percent) {
-    num = num * 100;
+  if (typeof value !== 'number') {
+    throw new Error(`${value} is not a number`);
   }
+  return value;
+}
 
-  const numStr = Math.abs(num) + '';
-  const pattern = parseNumberFormat(format, getLocaleNumberSymbol(locale, NumberSymbol.MinusSign));
+/**
+ * Transforms a number to a locale string based on a style and a format
+ */
+function formatNumber(
+    value: number | string, pattern: ParsedNumberFormat, locale: string, groupSymbol: NumberSymbol,
+    decimalSymbol: NumberSymbol, digitsInfo?: string, isPercent = false): string {
   let formattedText = '';
   let isZero = false;
+  const num = strToNumber(value);
 
   if (!isFinite(num)) {
     formattedText = getLocaleNumberSymbol(locale, NumberSymbol.Infinity);
   } else {
-    const parsedNumber = parseNumber(numStr);
+    let parsedNumber = parseNumber(num);
+
+    if (isPercent) {
+      parsedNumber = toPercent(parsedNumber);
+    }
 
     let minInt = pattern.minInt;
     let minFraction = pattern.minFrac;
@@ -67,8 +58,7 @@ export function formatNumber(
     if (digitsInfo) {
       const parts = digitsInfo.match(NUMBER_FORMAT_REGEXP);
       if (parts === null) {
-        res.error = `${digitsInfo} is not a valid digit info`;
-        return res;
+        throw new Error(`${digitsInfo} is not a valid digit info`);
       }
       const minIntPart = parts[1];
       const minFractionPart = parts[3];
@@ -126,12 +116,10 @@ export function formatNumber(
       groups.unshift(digits.join(''));
     }
 
-    const groupSymbol = currency ? NumberSymbol.CurrencyGroup : NumberSymbol.Group;
     formattedText = groups.join(getLocaleNumberSymbol(locale, groupSymbol));
 
     // append the decimal digits
     if (decimals.length) {
-      const decimalSymbol = currency ? NumberSymbol.CurrencyDecimal : NumberSymbol.Decimal;
       formattedText += getLocaleNumberSymbol(locale, decimalSymbol) + decimals.join('');
     }
 
@@ -146,22 +134,54 @@ export function formatNumber(
     formattedText = pattern.posPre + formattedText + pattern.posSuf;
   }
 
-  if (style === NumberFormatStyle.Currency && currency !== null) {
-    res.str = formattedText
-                  .replace(CURRENCY_CHAR, currency)
-                  // if we have 2 time the currency character, the second one is ignored
-                  .replace(CURRENCY_CHAR, '');
-    return res;
-  }
+  return formattedText;
+}
 
-  if (style === NumberFormatStyle.Percent) {
-    res.str = formattedText.replace(
-        new RegExp(PERCENT_CHAR, 'g'), getLocaleNumberSymbol(locale, NumberSymbol.PercentSign));
-    return res;
-  }
+/**
+ * Formats a currency to a locale string
+ *
+ * @internal
+ */
+export function formatCurrency(
+    value: number | string, locale: string, currency: string, currencyCode?: string,
+    digitsInfo?: string): string {
+  const format = getLocaleNumberFormat(locale, NumberFormatStyle.Currency);
+  const pattern = parseNumberFormat(format, getLocaleNumberSymbol(locale, NumberSymbol.MinusSign));
 
-  res.str = formattedText;
-  return res;
+  pattern.minFrac = getNbOfCurrencyDigits(currencyCode !);
+  pattern.maxFrac = pattern.minFrac;
+
+  const res = formatNumber(
+      value, pattern, locale, NumberSymbol.CurrencyGroup, NumberSymbol.CurrencyDecimal, digitsInfo);
+  return res
+      .replace(CURRENCY_CHAR, currency)
+      // if we have 2 time the currency character, the second one is ignored
+      .replace(CURRENCY_CHAR, '');
+}
+
+/**
+ * Formats a percentage to a locale string
+ *
+ * @internal
+ */
+export function formatPercent(value: number | string, locale: string, digitsInfo?: string): string {
+  const format = getLocaleNumberFormat(locale, NumberFormatStyle.Percent);
+  const pattern = parseNumberFormat(format, getLocaleNumberSymbol(locale, NumberSymbol.MinusSign));
+  const res = formatNumber(
+      value, pattern, locale, NumberSymbol.Group, NumberSymbol.Decimal, digitsInfo, true);
+  return res.replace(
+      new RegExp(PERCENT_CHAR, 'g'), getLocaleNumberSymbol(locale, NumberSymbol.PercentSign));
+}
+
+/**
+ * Formats a number to a locale string
+ *
+ * @internal
+ */
+export function formatDecimal(value: number | string, locale: string, digitsInfo?: string): string {
+  const format = getLocaleNumberFormat(locale, NumberFormatStyle.Decimal);
+  const pattern = parseNumberFormat(format, getLocaleNumberSymbol(locale, NumberSymbol.MinusSign));
+  return formatNumber(value, pattern, locale, NumberSymbol.Group, NumberSymbol.Decimal, digitsInfo);
 }
 
 interface ParsedNumberFormat {
@@ -249,11 +269,35 @@ interface ParsedNumber {
   integerLen: number;
 }
 
+// Transforms a parsed number into a percentage by multiplying it by 100
+function toPercent(parsedNumber: ParsedNumber): ParsedNumber {
+  // if the number is 0, don't do anything
+  if (parsedNumber.digits[0] === 0) {
+    return parsedNumber;
+  }
+
+  // Getting the current number of decimals
+  const fractionLen = parsedNumber.digits.length - parsedNumber.integerLen;
+  if (parsedNumber.exponent) {
+    parsedNumber.exponent += 2;
+  } else {
+    if (fractionLen === 0) {
+      parsedNumber.digits.push(0, 0);
+    } else if (fractionLen === 1) {
+      parsedNumber.digits.push(0);
+    }
+    parsedNumber.integerLen += 2;
+  }
+
+  return parsedNumber;
+}
+
 /**
- * Parse a number (as a string)
+ * Parses a number.
  * Significant bits of this parse algorithm came from https://github.com/MikeMcl/big.js/
  */
-function parseNumber(numStr: string): ParsedNumber {
+function parseNumber(num: number): ParsedNumber {
+  let numStr = Math.abs(num) + '';
   let exponent = 0, digits, integerLen;
   let i, j, zeros;
 
@@ -356,12 +400,23 @@ function roundNumber(parsedNumber: ParsedNumber, minFrac: number, maxFrac: numbe
   // Pad out with zeros to get the required fraction length
   for (; fractionLen < Math.max(0, fractionSize); fractionLen++) digits.push(0);
 
-
+  let dropTrailingZeros = fractionSize !== 0;
+  // Minimal length = nb of decimals required + current nb of integers
+  // Any number besides that is optional and can be removed if it's a trailing 0
+  const minLen = minFrac + parsedNumber.integerLen;
   // Do any carrying, e.g. a digit was rounded up to 10
   const carry = digits.reduceRight(function(carry, d, i, digits) {
     d = d + carry;
-    digits[i] = d % 10;
-    return Math.floor(d / 10);
+    digits[i] = d < 10 ? d : d - 10;  // d % 10
+    if (dropTrailingZeros) {
+      // Do not keep meaningless fractional trailing zeros (e.g. 15.52000 --> 15.52)
+      if (digits[i] === 0 && i >= minLen) {
+        digits.pop();
+      } else {
+        dropTrailingZeros = false;
+      }
+    }
+    return d >= 10 ? 1 : 0;  // Math.floor(d / 10);
   }, 0);
   if (carry) {
     digits.unshift(carry);
